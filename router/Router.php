@@ -5,6 +5,8 @@
  * @date 8.4.2017
  */
 
+require_once __DIR__ . "/exceptions.php";
+
 /**
 * URL routing class
 */
@@ -18,7 +20,7 @@ class Router
 	 * Get URL for parameter parsing. Removes subfolders.
 	 * @return string Reqested URL (/foo/bar)
 	 */
-	public static function getURL()
+	public static function getParamURL()
 	{
 		$subdir = strtolower(str_replace($_SERVER['DOCUMENT_ROOT'], '', dirname($_SERVER['SCRIPT_FILENAME'])));
 		$url = str_replace('/'.$subdir, '', strtolower($_SERVER['REQUEST_URI']));
@@ -27,11 +29,12 @@ class Router
 
 	/**
 	 * Parse URL and invoke controllers
+	 * @throws RoutingException
 	 * @return Retruns parameters
 	 */
 	public static function route()
 	{
-		
+
 	}
 
 	/**
@@ -45,19 +48,25 @@ class Router
 
 	/**
 	 * Register available controllers
-	 * @param  array $key_value associative array (key gets lower cased)
+	 * @param  array $assoc_arr associative array of aliases and controller classes (alias is changed to lowercase)
 	 * e.g.:
 	 * 'home' => HomeController::class
 	 * 'login' => LoginController::class
 	 *
 	 * First registred controller is default
 	 *
-	 * @param  string $namespace specifies the namespace of controller (e.g.: "administration")
+	 * @param  string $namespace specifies the namespace of controller (e.g.: "administration"). Default: "none"
 	 */
-	public static function registerControllers(array $assoc_arr, string $namespace = "none")
+	public static function registerControllers($assoc_arr, $namespace = "none")
 	{
-		
-	}
+		if (!is_array(self::$controllers)) {
+			self::$controllers = array();
+		}
+
+		foreach ($assoc_arr as $alias => $controllerClass) {
+			self::$controllers[$namespace][strtolower($alias)] = $controllerClass;			
+		}
+ 	}
 
 	/**
 	 * Register route. Routes are evaluated in order of registering.
@@ -73,8 +82,11 @@ class Router
 	 * 		* admin - namespace 'admin'
 	 * 		* <controller> - substitutes controller to invoke (only from namespace 'admin')
 	 * 		* <view> - creates parameter called 'view'
+	 *
+	 * "/<controller:home,about>/"
+	 * 		* <controller:home> - applies only to 'home' and 'about' controller
 	 */
-	public static function registerRoute(string $route)
+	public static function registerRoute($route)
 	{
 		
 	}
