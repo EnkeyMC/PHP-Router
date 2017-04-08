@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . "/exceptions.php";
+require_once __DIR__ . '/Route.php';
 
 /**
 * URL routing class
@@ -84,10 +85,14 @@ class Router
 	 * 		* <view> - creates parameter called 'view'
 	 *
 	 * "/<controller:home,about>/"
-	 * 		* <controller:home> - applies only to 'home' and 'about' controller
+	 * 		* <controller:home,about> - applies only to 'home' and 'about' controller
 	 */
 	public static function registerRoute($route)
 	{
-		
+		if (!is_array(self::$routes)) {
+			self::$routes = array();
+		}
+
+		self::$routes[] = new Route($route);
 	}
 }
