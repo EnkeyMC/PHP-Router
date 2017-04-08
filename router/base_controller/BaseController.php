@@ -19,7 +19,7 @@ class BaseController
 	 * Router calls this function if requested
 	 * @param  array $params Associative array of other parameters
 	 */
-	protected function invoke(array $params)
+	protected function invoke($params)
 	{
 		
 	}
