@@ -30,12 +30,87 @@ class Router
 
 	/**
 	 * Parse URL and invoke controllers
-	 * @throws RoutingException
+	 * @throws RoutingException, RouteSyntaxException
 	 * @return Retruns parameters
 	 */
 	public static function route()
 	{
+		self::$invoked = false;
+		$url = self::getParamURL();
+		$params = array();
 
+		// Explode to SEF and GET part
+		$sef_get = explode('?', $url);
+
+		$sef = self::parseSEF($sef_get[0]);
+		if (sizeof($sef_get) > 1) {
+			$params = self::parseGET($sef_get[1]);
+		}
+
+		$matched = false;
+		foreach (self::$routes as $route) {
+			if ($route->matches($sef)) {
+				$matched = true;
+				$sefParams = $route->getParamArray($sef);
+				$params = array_merge($sefParams, $params);
+
+				if (isset($sefParams[Route::controller_id])) {
+					$controller = $sefParams[Route::controller_id];
+					$namespaceName = "none";
+					if (isset($sefParams[Route::namespace_id])) {
+						$namespaceName = $sefParams[Route::namespace_id];
+					}
+					$controllerInstance = new self::$controllers[$namespaceName][$controller]();
+					$controllerInstance->invoke($params);
+					self::$invoked = true;
+				}
+				break;
+			}
+		}
+
+		if (!$matched)
+			throw new RoutingException("Error: URL '$url' does not match any route.");
+
+		return $params;
+	}
+
+	/**
+	 * Parse SEF URL to array
+	 * @param  string $sefURL SEF URL (e.g. "/foo/bar")
+	 * @return array         Parsed array (e.g. array("foo", "bar"))
+	 */
+	protected static function parseSEF($sefURL)
+	{
+		$sefURL = trim($sefURL, " /");
+		$sefArr = explode('/', $sefURL);
+
+		return $sefArr;
+	}
+
+	/**
+	 * Parse GET URL 
+	 * @param  string $getURL GET URL (e.g. "view=home&task=edit")
+	 * @return array         associative array of parameters (e.g. array("view" => "home", "task" => "edit"))
+	 * @throws RoutingException, RouteSyntaxException
+	 */
+	protected static function parseGET($getURL)
+	{
+		$params = explode('&', $getURL);
+		$getArr = array();
+
+		foreach ($params as $param) {
+			$kv = explode('=', $param);
+
+			if (sizeof($kv) === 1) {
+				$getArr[$kv[0]] = NULL;
+			} else if (sizeof($kv) === 2) {
+				$getArr[$kv[0]] = $kv[1];
+			} else {
+				throw new RoutingException("Error: Could not parse '$param' parameter from GET URL.");				
+			}
+		}
+
+		return $getArr;
 	}
 
 	/**
@@ -54,7 +129,7 @@ class Router
 	 * 'home' => HomeController::class
 	 * 'login' => LoginController::class
 	 *
-	 * First registred controller is default
+	 * '' => DefaultController::class - sets a default controller
 	 *
 	 * @param  string $namespace specifies the namespace of controller (e.g.: "administration"). Default: "none"
 	 */
@@ -86,6 +161,8 @@ class Router
 	 *
 	 * "/<controller:home,about>/"
 	 * 		* <controller:home,about> - applies only to 'home' and 'about' controller
+	 *
+	 * @throws RouteSyntaxException
 	 */
 	public static function registerRoute($route)
 	{
@@ -94,5 +171,20 @@ class Router
 		}
 
 		self::$routes[] = new Route($route);
+	}
+
+	public static function getControllers()
+	{
+		return self::$controllers;
+	}
+
+	public static function namespaceExists($namespaceName)
+	{
+		return isset(self::$controllers[$namespaceName]);
+	}
+
+	public static function controllerRegistered($controller, $namespaceName = "none")
+	{
+		return isset(self::$controllers[$namespaceName][$controller]);
 	}
 }
