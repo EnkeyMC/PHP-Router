@@ -16,16 +16,31 @@ class Router
 	protected static $routes;
 	protected static $controllers;
 	protected static $invoked = false;
+	protected static $basePath = NULL;
 
 	/**
-	 * Get URL for parameter parsing. Removes subfolders.
+	 * Set base path that shouldn't be included as URL parameters
+	 * @param string $path the path after domain (e.g. "/foo" )
+	 */
+	public static function setBasePath($path)
+	{
+		self::$basePath = $path;
+	}
+
+	/**
+	 * Get URL for parameter parsing. Removes subfolders or base path if specified.
 	 * @return string Reqested URL (/foo/bar)
 	 */
 	public static function getParamURL()
 	{
-		$subdir = strtolower(str_replace($_SERVER['DOCUMENT_ROOT'], '', dirname($_SERVER['SCRIPT_FILENAME'])));
-		$url = str_replace('/'.$subdir, '', strtolower($_SERVER['REQUEST_URI']));
-		return $url;
+		if (self::$basePath === NULL) {
+			$subdir = strtolower(str_replace($_SERVER['DOCUMENT_ROOT'], '', dirname($_SERVER['SCRIPT_FILENAME'])));
+			$url = str_replace('/'.$subdir, '', strtolower($_SERVER['REQUEST_URI']));
+			return $url;
+		} else {
+			$url = str_replace(self::$basePath, '', strtolower($_SERVER['REQUEST_URI']));
+			return $url;
+		}
 	}
 
 	/**
