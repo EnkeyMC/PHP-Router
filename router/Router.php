@@ -202,4 +202,15 @@ class Router
 	{
 		return isset(self::$controllers[$namespaceName][$controller]);
 	}
+
+	public static function invokeDefaultController($params, $namespaceName = "none")
+	{
+		if (!self::controllerRegistered('', $namespaceName)) {
+			throw new RoutingException("Error invoking default controller: Default controller not registred!");			
+		}
+
+		$controllerInstance = new self::$controllers[$namespaceName]['']();
+		$controllerInstance->invoke($params);
+		self::$invoked = true;
+	}
 }
